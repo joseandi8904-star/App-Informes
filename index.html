@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Reportes Foto">
     
-    <title>Reportes Fotográficos</title>
+    <title>Reportes Fotográficos Pro</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA2ElEQVRYhe2XMQ6DMAxFn5ArgBQxMnSH3oCla8/AFTgCd+hSiZGlK0tXxAEQQ0tCCKQkTfqltCqJ9f6zHduAv18JGAEr4Ai8gDvQBXrAGJgDM2AC9IF7nPuNbIEzcAFu8TkDS2AFbGPtCixibQ8c4rwPMkMKQFevc56vY9IAyZmiBqRnSgqQnikqQAFTVABnU1SAHqbUBZjClLoAjSkuQGWKC+BlSl0AK1PqAqxN6RigNaVjACtTOga4NP4RoFl+1p88vxp/BdAs3+R59NriHUARQHMj/nz+fjN+AMMYSo0a8/WjAAAAAElFTkSuQmCC">
@@ -19,13 +19,19 @@
     <!-- Pantalla de Inicio -->
     <div id="homeScreen" class="screen active">
         <div class="header">
-            <h1>📸 Reportes Fotográficos</h1>
+            <h1>📸 Reportes Fotográficos Pro</h1>
+            <button class="btn-icon-header" onclick="showSettings()">⚙️</button>
         </div>
         
         <div class="content">
             <div class="welcome-message">
                 <h2>Bienvenido</h2>
                 <p>Crea reportes profesionales con tus fotos</p>
+            </div>
+            
+            <!-- Barra de búsqueda -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar reportes..." oninput="searchReports()">
             </div>
             
             <div class="stats-container">
@@ -37,6 +43,10 @@
                     <div class="stat-number" id="totalPhotos">0</div>
                     <div class="stat-label">Fotos</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="storageUsed">0 MB</div>
+                    <div class="stat-label">Almacenamiento</div>
+                </div>
             </div>
             
             <button class="btn-primary" onclick="showNewReport()">
@@ -45,7 +55,15 @@
             </button>
             
             <div class="reports-list" id="reportsList">
-                <h3>Reportes Guardados</h3>
+                <div class="reports-header">
+                    <h3>Reportes Guardados</h3>
+                    <select id="sortSelect" onchange="sortReports()" class="sort-select">
+                        <option value="newest">Más recientes</option>
+                        <option value="oldest">Más antiguos</option>
+                        <option value="name">Por nombre</option>
+                        <option value="photos">Más fotos</option>
+                    </select>
+                </div>
                 <div id="reportsContainer"></div>
             </div>
         </div>
@@ -82,31 +100,43 @@
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleImageUpload(event)">
             <input type="file" id="galleryInput" accept="image/*" multiple style="display: none;" onchange="handleImageUpload(event)">
             
+            <!-- Área de Drop -->
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-content">
+                    <span class="drop-icon">📁</span>
+                    <p>Arrastra fotos aquí</p>
+                </div>
+            </div>
+            
             <div class="photos-grid" id="photosGrid">
                 <div class="empty-state">
                     <div class="empty-icon">📸</div>
                     <p>No hay fotos aún</p>
-                    <p class="empty-subtitle">Agrega fotos desde la cámara o galería</p>
+                    <p class="empty-subtitle">Agrega fotos desde la cámara, galería o arrastra aquí</p>
                 </div>
             </div>
             
             <div class="photo-counter">
-                Foto <span id="currentPhoto">0</span> de <span id="totalPhotosCount">0</span>
+                <span id="currentPhoto">0</span>/4 fotos • Página <span id="currentPageNum">1</span>
             </div>
         </div>
     </div>
 
     <!-- Modal de Foto -->
     <div id="photoModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content photo-modal-content">
             <div class="modal-header">
                 <button class="btn-close" onclick="closePhotoModal()">✕</button>
+                <button class="btn-icon-header" onclick="toggleZoom()">🔍</button>
             </div>
-            <img id="modalImage" src="" alt="Foto">
-            <textarea id="photoNote" class="photo-note-input" placeholder="Agregar nota a esta foto..."></textarea>
+            <div class="photo-viewer" id="photoViewer">
+                <img id="modalImage" src="" alt="Foto">
+            </div>
+            <textarea id="photoNote" class="photo-note-input" placeholder="Agregar nota a esta foto..." maxlength="500"></textarea>
+            <div class="note-counter"><span id="noteLength">0</span>/500 caracteres</div>
             <div class="modal-actions">
                 <button class="btn-secondary" onclick="deleteCurrentPhoto()">🗑️ Eliminar</button>
-                <button class="btn-primary" onclick="savePhotoNote()">💾 Guardar Nota</button>
+                <button class="btn-primary" onclick="savePhotoNote()">💾 Guardar</button>
             </div>
         </div>
     </div>
@@ -116,11 +146,19 @@
         <div class="modal-content menu-modal">
             <button class="menu-item" onclick="editReportTitle()">
                 <span class="menu-icon">✏️</span>
-                <span>Cambiar Nombre del Reporte</span>
+                <span>Cambiar Nombre</span>
+            </button>
+            <button class="menu-item" onclick="duplicateReport()">
+                <span class="menu-icon">📋</span>
+                <span>Duplicar Reporte</span>
+            </button>
+            <button class="menu-item" onclick="exportReport()">
+                <span class="menu-icon">💾</span>
+                <span>Exportar Datos</span>
             </button>
             <button class="menu-item" onclick="clearAllPhotos()">
                 <span class="menu-icon">🗑️</span>
-                <span>Eliminar Todas las Fotos</span>
+                <span>Eliminar Fotos</span>
             </button>
             <button class="menu-item" onclick="shareReport()">
                 <span class="menu-icon">📤</span>
@@ -133,8 +171,108 @@
         </div>
     </div>
 
+    <!-- Modal de Configuración -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content settings-modal">
+            <div class="modal-header">
+                <h2>⚙️ Configuración</h2>
+                <button class="btn-close" onclick="closeSettings()">✕</button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Modo Oscuro</h4>
+                        <p>Tema oscuro para la interfaz</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Calidad de Compresión</h4>
+                        <p>Mayor calidad = más espacio</p>
+                    </div>
+                    <select id="qualitySelect" onchange="updateQuality()" class="quality-select">
+                        <option value="0.6">Baja (ahorra espacio)</option>
+                        <option value="0.8" selected>Media (recomendada)</option>
+                        <option value="0.95">Alta (mejor calidad)</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Auto-guardar</h4>
+                        <p>Guardar cambios automáticamente</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="autoSaveToggle" checked onchange="toggleAutoSave()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Plantilla PDF</h4>
+                        <p>Estilo del PDF generado</p>
+                    </div>
+                    <select id="pdfTemplateSelect" onchange="updatePDFTemplate()" class="quality-select">
+                        <option value="default">Estándar</option>
+                        <option value="professional">Profesional</option>
+                        <option value="compact">Compacto</option>
+                    </select>
+                </div>
+                
+                <div class="setting-divider"></div>
+                
+                <button class="btn-danger" onclick="confirmClearAll()">
+                    🗑️ Eliminar Todos los Reportes
+                </button>
+                
+                <button class="btn-secondary" onclick="exportAllData()">
+                    💾 Exportar Todos los Datos
+                </button>
+                
+                <button class="btn-secondary" onclick="document.getElementById('importInput').click()">
+                    📥 Importar Datos
+                </button>
+                <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importData(event)">
+                
+                <div class="app-info">
+                    <p>Reportes Fotográficos Pro v2.0</p>
+                    <p>Almacenamiento usado: <span id="storageDetails">0 MB</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Carga -->
+    <div id="loadingModal" class="modal loading-modal">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loadingText">Procesando...</p>
+        </div>
+    </div>
+
+    <!-- Modal de Vista Previa PDF -->
+    <div id="pdfPreviewModal" class="modal">
+        <div class="modal-content pdf-preview-content">
+            <div class="modal-header">
+                <h2>📄 Vista Previa PDF</h2>
+                <button class="btn-close" onclick="closePDFPreview()">✕</button>
+            </div>
+            <div id="pdfPreviewContainer" class="pdf-preview-container"></div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closePDFPreview()">Cancelar</button>
+                <button class="btn-primary" onclick="downloadPDFFromPreview()">📥 Descargar PDF</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
-
