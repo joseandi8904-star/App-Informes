@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#FF6B35">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Reportes Foto">
+    
+    <title>Reportes Fotográficos</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA2ElEQVRYhe2XMQ6DMAxFn5ArgBQxMnSH3oCla8/AFTgCd+hSiZGlK0tXxAEQQ0tCCKQkTfqltCqJ9f6zHduAv18JGAEr4Ai8gDvQBXrAGJgDM2AC9IF7nPuNbIEzcAFu8TkDS2AFbGPtCixibQ8c4rwPMkMKQFevc56vY9IAyZmiBqRnSgqQnikqQAFTVABnU1SAHqbUBZjClLoAjSkuQGWKC+BlSl0AK1PqAqxN6RigNaVjACtTOga4NP4RoFl+1p88vxp/BdAs3+R59NriHUARQHMj/nz+fjN+AMMYSo0a8/WjAAAAAElFTkSuQmCC">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Pantalla de Inicio -->
+    <div id="homeScreen" class="screen active">
+        <div class="header">
+            <h1>📸 Reportes Fotográficos</h1>
+        </div>
+        
+        <div class="content">
+            <div class="welcome-message">
+                <h2>Bienvenido</h2>
+                <p>Crea reportes profesionales con tus fotos</p>
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalReports">0</div>
+                    <div class="stat-label">Reportes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalPhotos">0</div>
+                    <div class="stat-label">Fotos</div>
+                </div>
+            </div>
+            
+            <button class="btn-primary" onclick="showNewReport()">
+                <span class="btn-icon">➕</span>
+                Crear Nuevo Reporte
+            </button>
+            
+            <div class="reports-list" id="reportsList">
+                <h3>Reportes Guardados</h3>
+                <div id="reportsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Nuevo Reporte -->
+    <div id="newReportScreen" class="screen">
+        <div class="header">
+            <button class="btn-back" onclick="showHome()">← Atrás</button>
+            <h1 id="reportTitle">Reporte 1</h1>
+            <button class="btn-icon-header" onclick="showMenu()">⋮</button>
+        </div>
+        
+        <div class="content">
+            <div class="toolbar">
+                <button class="toolbar-btn" onclick="document.getElementById('cameraInput').click()">
+                    <span class="icon">📷</span>
+                    <span>Cámara</span>
+                </button>
+                <button class="toolbar-btn" onclick="document.getElementById('galleryInput').click()">
+                    <span class="icon">🖼️</span>
+                    <span>Galería</span>
+                </button>
+                <button class="toolbar-btn" onclick="addTextNote()">
+                    <span class="icon">📝</span>
+                    <span>Nota</span>
+                </button>
+                <button class="toolbar-btn" onclick="generatePDF()">
+                    <span class="icon">📄</span>
+                    <span>PDF</span>
+                </button>
+            </div>
+            
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleImageUpload(event)">
+            <input type="file" id="galleryInput" accept="image/*" multiple style="display: none;" onchange="handleImageUpload(event)">
+            
+            <div class="photos-grid" id="photosGrid">
+                <div class="empty-state">
+                    <div class="empty-icon">📸</div>
+                    <p>No hay fotos aún</p>
+                    <p class="empty-subtitle">Agrega fotos desde la cámara o galería</p>
+                </div>
+            </div>
+            
+            <div class="photo-counter">
+                Foto <span id="currentPhoto">0</span> de <span id="totalPhotosCount">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Foto -->
+    <div id="photoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="btn-close" onclick="closePhotoModal()">✕</button>
+            </div>
+            <img id="modalImage" src="" alt="Foto">
+            <textarea id="photoNote" class="photo-note-input" placeholder="Agregar nota a esta foto..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="deleteCurrentPhoto()">🗑️ Eliminar</button>
+                <button class="btn-primary" onclick="savePhotoNote()">💾 Guardar Nota</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Menú -->
+    <div id="menuModal" class="modal">
+        <div class="modal-content menu-modal">
+            <button class="menu-item" onclick="editReportTitle()">
+                <span class="menu-icon">✏️</span>
+                <span>Cambiar Nombre del Reporte</span>
+            </button>
+            <button class="menu-item" onclick="clearAllPhotos()">
+                <span class="menu-icon">🗑️</span>
+                <span>Eliminar Todas las Fotos</span>
+            </button>
+            <button class="menu-item" onclick="shareReport()">
+                <span class="menu-icon">📤</span>
+                <span>Compartir</span>
+            </button>
+            <button class="menu-item cancel" onclick="closeMenu()">
+                <span class="menu-icon">✕</span>
+                <span>Cancelar</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+
